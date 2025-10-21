@@ -1,9 +1,6 @@
-# Force Python 3.11 (since Pillow & PyMuPDF are stable here)
+# ---------------- Base Image ----------------
 FROM python:3.11-slim
 
-# ---------------- Base Image ----------------
-ARG BASE=python:3.11-slim
-FROM ${BASE}
 
 # ---------------- System Packages ----------------
 # - tesseract + ben/eng language packs
