@@ -12,6 +12,11 @@ import fitz  # PyMuPDF
 from PIL import Image, ImageFilter, ImageChops, ImageStat, ImageOps, ImageDraw, ImageEnhance
 import unicodedata
 
+# --- OCR config (same everywhere: local, Docker, Railway) ---
+# You can override this later with an environment variable OCR_CONFIG
+OCR_CONFIG = os.getenv("OCR_CONFIG", "--oem 1 --psm 6 -c preserve_interword_spaces=1")
+OCR_LANG   = os.getenv("OCR_LANG", "ben+eng")
+
 
 # --- Environment normalization for Docker / Railway ---
 os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr/4.00/tessdata"
@@ -126,7 +131,7 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
     if not OCR_AVAILABLE:
         return ""
     im = _prep_image_for_ocr(im)
-    txt = pytesseract.image_to_string(im, lang="ben+eng", config=config) or ""
+    txt = pytesseract.image_to_string(im, lang=OCR_LANG, config=OCR_CONFIG) or ""
     # ✅ If the first OCR result already contains license hints, stop here (saves time)
     low = txt.lower()
     if ("trad" in low and ("dncc" in low or "dscc" in low)) or ("লাইসেন্স নং" in low):
@@ -147,7 +152,7 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
             ]
         )
         for cfg in cfgs:
-            t2 = pytesseract.image_to_string(im, config=cfg) or ""
+            t2 = pytesseract.image_to_string(im, lang=OCR_LANG, config=cfg) or ""
             if len(t2.strip()) > len(txt.strip()):
                 txt = t2
 
@@ -160,17 +165,18 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
         # Pass 1: main fee band (mid → low)
         y0, y1 = int(h * 0.60), int(h * 0.90)
         band1 = im.crop((int(w * 0.05), y0, int(w * 0.95), y1))
-        t1 = pytesseract.image_to_string(band1, config=r"--oem 1 --psm 6 -l ben+eng") or ""
+        t1 = pytesseract.image_to_string(band1, lang=OCR_LANG, config="--oem 1 --psm 6") or ""
 
-        # Pass 2: slightly higher band (some templates sit higher)
+        # Pass 2: sli
+        # ghtly higher band (some templates sit higher)
         y0b, y1b = int(h * 0.45), int(h * 0.60)
         band2 = im.crop((int(w * 0.05), y0b, int(w * 0.95), y1b))
-        t2 = pytesseract.image_to_string(band2, config=r"--oem 1 --psm 6 -l ben+eng") or ""
+        t2 = pytesseract.image_to_string(band2, lang=OCR_LANG, config="--oem 1 --psm 6") or ""
 
         # Pass 3: even lower band (catches signboard totals)
         y0c, y1c = int(h * 0.86), int(h * 0.95)
         band3 = im.crop((int(w * 0.05), y0c, int(w * 0.95), y1c))
-        t3 = pytesseract.image_to_string(band3, config=r"--oem 1 --psm 6 -l ben+eng") or ""
+        t3 = pytesseract.image_to_string(band3, lang=OCR_LANG, config="--oem 1 --psm 6") or ""
 
         # Use the longest of the three
         t_roi = max([t1, t2, t3], key=lambda t: len(t.strip()))
@@ -182,7 +188,8 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
         h, w = im.height, im.width
         y0h, y1h = int(h * 0.16), int(h * 0.34)
         head = im.crop((int(w * 0.08), y0h, int(w * 0.92), y1h))
-        th = pytesseract.image_to_string(head, config=r"--oem 1 --psm 7 -l ben+eng") or ""
+        th = pytesseract.image_to_string(head, lang=OCR_LANG, config="--oem 1 --psm 7") or ""
+
         if len(th.strip()) > 10 and len(th.strip()) > len(txt.strip()):
             txt = txt + "\n" + th
 
@@ -191,7 +198,8 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
         best_score = len(txt.strip()) + sum(ch.isdigit() for ch in txt) * 3
         for ang in (-1.2, 1.2):   # was (-2.0, -1.2, -0.6, 0.6, 1.2, 2.0)
             imp = im.rotate(ang, resample=Image.BICUBIC, expand=True, fillcolor=255)
-            t = pytesseract.image_to_string(imp, config=config) or ""
+            t = pytesseract.image_to_string(imp, lang=OCR_LANG, config=OCR_CONFIG) or ""
+
             score = len(t.strip()) + sum(ch.isdigit() for ch in t) * 3
             if score > best_score:
                 best_txt, best_score = t, score
@@ -201,7 +209,8 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
     if not small and len(txt.strip()) < 40:
         for ang in (-0.7, 0.7):
             imp = im.rotate(ang, expand=False, fillcolor=255)
-            t3 = pytesseract.image_to_string(imp, config=config) or ""
+            t3 = pytesseract.image_to_string(imp, lang=OCR_LANG, config=OCR_CONFIG) or ""
+
             if len(t3.strip()) > len(txt.strip()):
                 txt = t3
 
@@ -223,7 +232,7 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
             # move top-left/right inward and bottom-left/right outward (and the inverse)
             dst = (dx_px, 0,  w - dx_px, 0,  w + dx_px, h,  -dx_px, h)
             warped = im.transform((w, h), Image.QUAD, dst, Image.BICUBIC)
-            return pytesseract.image_to_string(warped, config=config) or ""
+            return pytesseract.image_to_string(warped, lang=OCR_LANG, config=OCR_CONFIG) or ""
 
         for dx in (int(im.width*0.015), int(im.width*0.03)):
             for s in (+dx, -dx):
