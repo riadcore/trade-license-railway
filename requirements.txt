@@ -1,5 +1,5 @@
 gradio==5.8.0
-gradio_client==1.5.4
+gradio_client==1.5.1
 pytesseract==0.3.10
 pillow==10.3.0
 pymupdf==1.24.9
