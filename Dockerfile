@@ -31,4 +31,7 @@ COPY . /app
 # ---------------- Runtime ----------------
 EXPOSE 8080
 ENV GRADIO_SERVER_PORT=8080
+# Override distro-provided models with your exact local ones
+RUN mkdir -p /usr/share/tesseract-ocr/4.00/tessdata
+COPY tessdata/*.traineddata /usr/share/tesseract-ocr/4.00/tessdata/
 CMD ["python", "-u", "app.py"]

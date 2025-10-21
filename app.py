@@ -12,6 +12,7 @@ import fitz  # PyMuPDF
 from PIL import Image, ImageFilter, ImageChops, ImageStat, ImageOps, ImageDraw, ImageEnhance
 import unicodedata
 
+
 # --- Environment normalization for Docker / Railway ---
 os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr/4.00/tessdata"
 os.environ["LANG"] = "bn_BD.UTF-8"
