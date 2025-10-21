@@ -22,7 +22,7 @@ OCR_LANG   = os.getenv("OCR_LANG", "ben+eng")
 os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr/4.00/tessdata"
 os.environ["LANG"] = "bn_BD.UTF-8"
 os.environ["LC_ALL"] = "bn_BD.UTF-8"
-os.environ["OMP_THREAD_LIMIT"] = "1"
+os.environ["OMP_THREAD_LIMIT"] = "2"
 
 
 
@@ -265,7 +265,7 @@ def extract_text_from_path(path: str, ocr_all_pages: bool = False) -> Tuple[str,
                 pages = range(len(doc)) if ocr_all_pages else range(min(1, len(doc)))
                 ocr_chunks = []
                 for i in pages:
-                    pix = doc[i].get_pixmap(dpi=300, alpha=False)  # try 300 if needed
+                    pix = doc[i].get_pixmap(dpi=220, alpha=False)  # try 300 if needed
                     im = Image.open(io.BytesIO(pix.tobytes("png")))
                     ocr_chunks.append(ocr_image_fast(im))
                 return "\n".join(ocr_chunks).strip(), "ocr_image"
