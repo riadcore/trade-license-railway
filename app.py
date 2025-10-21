@@ -1247,5 +1247,5 @@ if __name__ == "__main__":
     show_error=True,
     show_api=False,     # avoid schema route that triggered the TypeError
     inbrowser=False,    # don’t try to open a local browser
-    share=False         # start with False; see note below
+    share=True         # start with False; see note below
 )
