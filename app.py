@@ -11,6 +11,15 @@ import gradio as gr
 import fitz  # PyMuPDF
 from PIL import Image, ImageFilter, ImageChops, ImageStat, ImageOps, ImageDraw, ImageEnhance
 import unicodedata
+
+# --- Environment normalization for Docker / Railway ---
+os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr/4.00/tessdata"
+os.environ["LANG"] = "bn_BD.UTF-8"
+os.environ["LC_ALL"] = "bn_BD.UTF-8"
+os.environ["OMP_THREAD_LIMIT"] = "2"
+
+
+
 def bn_norm(s: str) -> str:
     if not s:
         return s
@@ -116,7 +125,7 @@ def ocr_image_fast(im: Image.Image, config: str = FAST_OCR_CONFIG) -> str:
     if not OCR_AVAILABLE:
         return ""
     im = _prep_image_for_ocr(im)
-    txt = pytesseract.image_to_string(im, config=config) or ""
+    txt = pytesseract.image_to_string(im, lang="ben+eng", config=config) or ""
     # ✅ If the first OCR result already contains license hints, stop here (saves time)
     low = txt.lower()
     if ("trad" in low and ("dncc" in low or "dscc" in low)) or ("লাইসেন্স নং" in low):
