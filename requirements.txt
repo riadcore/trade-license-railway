@@ -1,0 +1,4 @@
+gradio
+pymupdf
+pillow
+pytesseract
